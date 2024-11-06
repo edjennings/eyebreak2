@@ -2,18 +2,14 @@
 #include <math.h> 
 #include <string>
 #include <iostream>
-#include <atomic>
+#include <condition_variable>
+#include <mutex>
 
 class Timer {
 
 public:
-    bool is_paused;
-        std::atomic<int>  m_duration{0};
-
-    
     Timer() {
-            is_paused = false;
-          //  m_duration = 0;
+            m_duration = 0;
     }
   
     std::string DisplayTimeLeft(){
@@ -24,32 +20,38 @@ public:
 
     } 
     
-/*     void SetDuration(int duration){
-        m_duration.store(duration);
+    void SetDuration(int duration){
+        m_duration = duration;
     }
- */
-    bool RunTimer(int duration) {
+
+    bool RunTimer(int duration, std::mutex m, std::condition_variable cv, bool pause) {
     
-        //m_duration.store(duration); 
+        m_duration = duration;
+        std::unique_lock lk(m);
+        cv.wait(lk, [&]{ return pause;});
 
         std::chrono::time_point<std::chrono::steady_clock> m_timeBegin;
         m_timeBegin = std::chrono::steady_clock::now();
         auto _current_time = std::chrono::steady_clock::now();
         
-        m_time_left = duration - std::chrono::duration_cast<std::chrono::seconds>(_current_time - m_timeBegin).count();
+        m_time_left = m_duration - std::chrono::duration_cast<std::chrono::seconds>(_current_time - m_timeBegin).count();
         
         while(m_time_left > 0) {
-            
-            _current_time = std::chrono::steady_clock::now();
-            m_time_left = duration - std::chrono::duration_cast<std::chrono::seconds>(_current_time - m_timeBegin).count();
+            std::unique_lock lk(m);
+            cv.wait(lk, [&]{ return pause;});
 
-          //  std::cout << DisplayTimeLeft() << std::endl;
-        
+            _current_time = std::chrono::steady_clock::now();
+            m_time_left = m_duration - std::chrono::duration_cast<std::chrono::seconds>(_current_time - m_timeBegin).count();
+
+           //std::cout << m_duration << std::endl;
+
+            cv.notify_one();       
         }
         return true;
     }
      
 private:
     int  m_time_left;
+    int m_duration;
 
 };
