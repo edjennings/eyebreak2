@@ -27,8 +27,6 @@ public:
     bool RunTimer(int duration, std::mutex m, std::condition_variable cv, bool pause) {
     
         m_duration = duration;
-        std::unique_lock lk(m);
-        cv.wait(lk, [&]{ return pause;});
 
         std::chrono::time_point<std::chrono::steady_clock> m_timeBegin;
         m_timeBegin = std::chrono::steady_clock::now();
