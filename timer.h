@@ -3,13 +3,15 @@
 #include <string>
 #include <iostream>
 #include <condition_variable>
-#include <mutex>
+#include <thread>
 
 class Timer {
 
 public:
     Timer() {
             m_duration = 0;
+            m_time_left = 0;
+            m_pause = false;
     }
   
     std::string DisplayTimeLeft(){
@@ -19,37 +21,46 @@ public:
         return DisplayTimeLeft;
 
     } 
+
+    int GetDuration(){
+        return m_duration;
+    }
     
     void SetDuration(int duration){
         m_duration = duration;
     }
 
-    bool RunTimer(int duration, std::mutex m, std::condition_variable cv, bool pause) {
+    void SetPause(bool pause){
+        m_pause = pause;
+    }
+
+    bool RunTimer(int duration) {
     
         m_duration = duration;
 
-        std::chrono::time_point<std::chrono::steady_clock> m_timeBegin;
-        m_timeBegin = std::chrono::steady_clock::now();
-        auto _current_time = std::chrono::steady_clock::now();
+        // std::chrono::time_point<std::chrono::steady_clock> m_timeBegin;
+        // m_timeBegin = std::chrono::steady_clock::now();
+        // auto _current_time = std::chrono::steady_clock::now();
         
-        m_time_left = m_duration - std::chrono::duration_cast<std::chrono::seconds>(_current_time - m_timeBegin).count();
+        m_time_left = m_duration;
         
         while(m_time_left > 0) {
-            std::unique_lock lk(m);
-            cv.wait(lk, [&]{ return pause;});
-
-            _current_time = std::chrono::steady_clock::now();
-            m_time_left = m_duration - std::chrono::duration_cast<std::chrono::seconds>(_current_time - m_timeBegin).count();
-
-           //std::cout << m_duration << std::endl;
-
-            cv.notify_one();       
-        }
+            if(m_pause != true){
+            // _current_time = std::chrono::steady_clock::now();
+            // m_time_left = m_time_left - std::chrono::duration_cast<std::chrono::seconds>(_current_time - m_timeBegin).count();
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            m_time_left--;
+            //std::cout << DisplayTimeLeft() << std::endl;
+            }
+            else{
+             std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
+       }
         return true;
     }
      
 private:
-    int  m_time_left;
     int m_duration;
-
+    int m_time_left;
+    bool m_pause;
 };

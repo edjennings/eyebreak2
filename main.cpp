@@ -1,29 +1,31 @@
 #include "timer.h"
-#include <thread>
 
-std::mutex m;
-std::condition_variable cv;
-bool pause = false;
 char UserInput = 'r';
-
 
 int main() {
     Timer timer; 
-    int duration = 10;
-    std::thread timer_thread(&Timer::RunTimer, timer, std::ref(duration), std::ref(m), std::ref(cv), std::ref(pause));
 
-    while(pause != true)
-    {
-      std::cout << "Pause?";
+   std::thread timer_thread(&Timer::RunTimer, &timer, 15);
+
+    while(UserInput!= 'x' || timer_thread.joinable() != true){
+      //std::cout << timer.GetDuration() << " " << timer.DisplayTimeLeft() << " Pause? ";
+    std::cout << " pause ?";
       std::cin >> UserInput;
-
-      std::lock_guard lk(m);
-      if (UserInput == 'p'){
-        pause = true;
-        cv.notify_one();
+      
+     if (UserInput == 'p'){
+       timer.SetPause(true);
       }
+      else if(UserInput == 'u'){
+        timer.SetPause(false);
+        std::cout << timer.DisplayTimeLeft();
+        
 
+      }
+     
+     
     }
+
     timer_thread.join();
+       
 
 }
